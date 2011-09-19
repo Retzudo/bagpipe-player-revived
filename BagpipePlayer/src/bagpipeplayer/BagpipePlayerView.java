@@ -30,6 +30,10 @@ import org.jdesktop.application.Action;
 public class BagpipePlayerView extends FrameView {
     FileFilter filter = new CustomFileFilter();
 
+    /**
+     * 
+     * @param app
+     */
     public BagpipePlayerView(SingleFrameApplication app) {
         super(app);
 
@@ -95,6 +99,9 @@ public class BagpipePlayerView extends FrameView {
         });
     }
 
+    /**
+     * 
+     */
     @Action
     public void showAboutBox() {
         if (aboutBox == null) {
@@ -261,6 +268,9 @@ public class BagpipePlayerView extends FrameView {
         setStatusBar(statusPanel);
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * 
+     */
     @Action
     public void openFile() {
         int returnVal = fileChooser.showOpenDialog(mainPanel);
