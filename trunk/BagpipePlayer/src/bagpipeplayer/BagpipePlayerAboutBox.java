@@ -6,14 +6,36 @@ package bagpipeplayer;
 
 import org.jdesktop.application.Action;
 
+/**
+ * The About box
+ * @author Christoph Willinger
+ */
+/**
+ * 
+ * @author Christoph Willinger
+ */
 public class BagpipePlayerAboutBox extends javax.swing.JDialog {
 
+    /**
+     * Shows the About box
+     * @param parent 
+     */
+    /**
+     * 
+     * @param parent
+     */
     public BagpipePlayerAboutBox(java.awt.Frame parent) {
         super(parent);
         initComponents();
         getRootPane().setDefaultButton(closeButton);
     }
 
+    /**
+     * Close the box
+     */
+    /**
+     * 
+     */
     @Action public void closeAboutBox() {
         dispose();
     }
@@ -35,7 +57,7 @@ public class BagpipePlayerAboutBox extends javax.swing.JDialog {
         javax.swing.JLabel homepageLabel = new javax.swing.JLabel();
         javax.swing.JLabel appHomepageLabel = new javax.swing.JLabel();
         javax.swing.JLabel appDescLabel = new javax.swing.JLabel();
-        imageLabel = new javax.swing.JLabel();
+        javax.swing.JLabel imageLabel = new javax.swing.JLabel();
         javax.swing.JLabel licenseLabel = new javax.swing.JLabel();
         javax.swing.JLabel appLicenseLabel = new javax.swing.JLabel();
 
@@ -147,7 +169,6 @@ public class BagpipePlayerAboutBox extends javax.swing.JDialog {
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton closeButton;
-    private javax.swing.JLabel imageLabel;
     // End of variables declaration//GEN-END:variables
     
 }

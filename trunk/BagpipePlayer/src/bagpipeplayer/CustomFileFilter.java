@@ -3,7 +3,7 @@ package bagpipeplayer;
 import java.io.File;
 
 /**
- *
+ * FileFilter for the file chooser dialog that only accepts .bww, .bmw and .abc
  * @author Christoph Willinger
  */
 public class CustomFileFilter extends javax.swing.filechooser.FileFilter {
