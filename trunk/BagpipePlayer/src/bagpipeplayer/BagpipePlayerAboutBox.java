@@ -10,19 +10,11 @@ import org.jdesktop.application.Action;
  * The About box
  * @author Christoph Willinger
  */
-/**
- * 
- * @author Christoph Willinger
- */
 public class BagpipePlayerAboutBox extends javax.swing.JDialog {
 
     /**
      * Shows the About box
      * @param parent 
-     */
-    /**
-     * 
-     * @param parent
      */
     public BagpipePlayerAboutBox(java.awt.Frame parent) {
         super(parent);
@@ -32,9 +24,6 @@ public class BagpipePlayerAboutBox extends javax.swing.JDialog {
 
     /**
      * Close the box
-     */
-    /**
-     * 
      */
     @Action public void closeAboutBox() {
         dispose();

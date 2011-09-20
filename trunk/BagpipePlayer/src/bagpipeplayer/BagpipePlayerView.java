@@ -305,7 +305,7 @@ public class BagpipePlayerView extends FrameView {
     }// </editor-fold>//GEN-END:initComponents
 
     /**
-     * 
+     * Show the file chooser and act accordingly for the chosen file type.
      */
     @Action
     public void openFile() {
