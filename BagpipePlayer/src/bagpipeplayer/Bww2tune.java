@@ -57,8 +57,6 @@ public class Bww2tune {
         raw_abc = new StringBuilder();
         String [] cleanBww = null;
         int lineWithFirstQuote=0;
-        Pattern p;
-        Matcher m;
         
         /*
          * Append index number to ABC string. Bagpipe Player assumes there is only one tune per tunebook.
@@ -75,7 +73,7 @@ public class Bww2tune {
          */
         StringBuilder cleanBwwBuilder = new StringBuilder();
         for(String line : lines) {
-            if(line.length()>0) cleanBwwBuilder.append(line).append('\n');
+            if(line.length()>0) cleanBwwBuilder.append(line.trim()).append('\n');
         }
         cleanBww = cleanBwwBuilder.toString().split("\\n");
         
@@ -117,29 +115,48 @@ public class Bww2tune {
          */
         for(int i=lineWithFirstQuote+4; i<cleanBww.length; i++) {
             /*
-             * First find the time signature (e.g. 4/4 or 6/8) and flats (but we won't
-             * use them since bagpipes are always in A Mixolydian).
+             * Select every line beginning with an & (a clef in BWW language)
              */
-            p=Pattern.compile("&.*(sharp[a-g])\\s+(\\d_\\d|C{1})\\s+?", Pattern.CASE_INSENSITIVE);
-            m=p.matcher(cleanBww[i]);
-            
-            if(m.find()) {
-                // Replace the _ with / and append it to the ABC string
-                setMetronom(m.group(2).replace('_', '/'));
-                // extract every symbol that remains in this line
-                p=Pattern.compile("((?<=\\d_\\d\\s)[\\w'!\\^].*)", Pattern.CASE_INSENSITIVE);
+            if(cleanBww[i].startsWith("&")) {
+                Pattern p = null;
+                Matcher m = null;
+                /*
+                 * Ok if the line beginns with a clef there probably is a beat and
+                 * maybe already some music information. So we disect the string.
+                 * ^& +(sharp[a-z]+ *)* --> matches the beginning of the string and
+                 *                            those "sharps"
+                 * (\\d_\\d|C)? * --> matches the beat which can be here.
+                 * (.*)?$ --> matches everything else (if it is there) until the end of the line.
+                 */
+                p=Pattern.compile("^& +(sharp[a-z]+ *)*(\\d_\\d|C)? *(.*)?$");
                 m=p.matcher(cleanBww[i]);
+                
                 if(m.find()) {
-                    // append them to the string
-                    appendToBwwMusic(m.group());
+                    //System.out.println("group 1: ---"+m.group(1)+"---");
+                    //System.out.println("group 2: ---"+m.group(2)+"---");
+                    //System.out.println("group 3: ---"+m.group(3)+"---");
+                    
+                    /*
+                     * If this line contains a beat, set it (only possible once).
+                     */
+                    if(m.group(2)!=null) {
+                        setMetronom(m.group(2).replace('_', '/'));
+                    }
+                    
+                    /*
+                     * If this line contains anything else, assume that it is music
+                     * and add it.
+                     */
+                    if(m.group(3)!=null) {
+                        appendToBwwMusic(m.group(3));
+                        appendToBwwMusic("\n");
+                    }
                 }
-                // then skip to the next cycle so that the information we just extracted
-                // doesn't get into the BWW string
-                continue;
+            } else {
+                // apparently this line contains no information besides music so just append it
+                appendToBwwMusic(cleanBww[i]);
+                appendToBwwMusic("\n");
             }
-            
-            // apparently this line contains no information besides music so append it
-            appendToBwwMusic(cleanBww[i]);
         }
         
         computeAbcFromBww();
@@ -147,6 +164,7 @@ public class Bww2tune {
         /*
          * Always append 'K:' at the and of the head before music. Why? Dunno!
          */
+        raw_abc.append("L:1/16\n");
         raw_abc.append("K:A Mixolydian\n");
     }
     
@@ -156,6 +174,10 @@ public class Bww2tune {
      * @param s String containing one or more symbols
      */
     private void appendToBwwMusic(String s) {
+        if(s.matches("\n")) {
+            bwwMusic.append(s);
+            return;
+        }
         String clean="";
         clean = s.trim();
         clean = clean.replaceAll("\\s{2,}", " ");
@@ -185,6 +207,19 @@ public class Bww2tune {
         
     }
     
+    private String replaceBwwSymbol(String s) {
+        //High g grace note
+        if(s.matches("|!''")) return "[|: ";
+        if(s.matches("Cr_16")) return " c";
+        if(s.matches("Bl_16")) return "B ";
+        if(s.matches("gg")) return "{a}";
+        return "";
+    }
+    
+    private void appendToAbcMusic(String s) {
+        bwwMusic.append(s);
+    }
+    
     /**
      * @return Returns the parsed BWW file as Tune
      */
@@ -195,7 +230,7 @@ public class Bww2tune {
     /**
      * @return Return the parsed BWW file as an ABC string
      */
-    public String getABC(){
+    public String getAbc(){
         return raw_abc.toString();
     }
 }
