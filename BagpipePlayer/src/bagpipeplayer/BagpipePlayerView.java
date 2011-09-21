@@ -6,6 +6,8 @@ package bagpipeplayer;
 
 import abc.notation.Tune;
 import abc.parser.TuneParser;
+import abc.ui.scoretemplates.ScoreAttribute;
+import abc.ui.swing.JTune;
 import java.awt.Image;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -98,6 +100,9 @@ public class BagpipePlayerView extends FrameView {
                 }
             }
         });
+        
+        canvas.getTemplate().setAttribute(ScoreAttribute.NOTE_STEM_POLICY, JTune.STEMS_DOWN);
+        canvas.getTemplate().setAttributeSize(ScoreAttribute.NOTATION_SIZE, 50);
     }
 
     /**
@@ -319,7 +324,7 @@ public class BagpipePlayerView extends FrameView {
                 } else if(f.getName().endsWith(".bww")) {
                     Bww2tune test = new Bww2tune(f);
                     Tune t = test.getTune();
-                    System.out.println(test.getBwwMusic());
+                    System.out.println(test.getBwwMusicAsString());
                     updateView(t);
                 }
             } catch (FileNotFoundException ex) {

@@ -1,7 +1,16 @@
 package bagpipeplayer;
 
+import abc.notation.BarLine;
+import abc.notation.Decoration;
+import abc.notation.EndOfStaffLine;
+import abc.notation.KeySignature;
+import abc.notation.MeasureRepeat;
+import abc.notation.Note;
+import abc.notation.NotesSeparator;
+import abc.notation.RepeatBarLine;
+import abc.notation.RepeatEnd;
+import abc.notation.TimeSignature;
 import abc.notation.Tune;
-import abc.parser.TuneParser;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,6 +18,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,9 +29,11 @@ import java.util.regex.Pattern;
 public class Bww2tune {
     
     private String raw_bww;
-    private StringBuilder raw_abc;
-    private StringBuilder bwwMusic = new StringBuilder();;
+    private ArrayList<String> bwwMusic = new ArrayList();
+    //private ArrayList<Note> abcMusic = new ArrayList();
+    private Tune abcMusic = new Tune();
     private boolean metronomSet=false;
+    private String voice = "Bagpipe";
     Tune t;
     
     /**
@@ -54,14 +66,8 @@ public class Bww2tune {
      * Parses the BWW file into an ABC file
      */
     private void parse() {
-        raw_abc = new StringBuilder();
         String [] cleanBww = null;
         int lineWithFirstQuote=0;
-        
-        /*
-         * Append index number to ABC string. Bagpipe Player assumes there is only one tune per tunebook.
-         */
-        raw_abc.append("X:1\n");
         
         /*
          * Split the BWW file by lines for parsing
@@ -92,23 +98,23 @@ public class Bww2tune {
          * Get the title of the tune and discord the formatting information stored in the BWW file because we won't need it.
          * The procedure assumes that this information is stored always at the same line numger (i.e. line 9)
          */
-        raw_abc.append("T:").append(cleanBww[lineWithFirstQuote].substring(cleanBww[lineWithFirstQuote].indexOf('"')+1, cleanBww[lineWithFirstQuote].lastIndexOf('"'))).append('\n');
+        t.addTitle(cleanBww[lineWithFirstQuote].substring(cleanBww[lineWithFirstQuote].indexOf('"')+1, cleanBww[lineWithFirstQuote].lastIndexOf('"')));
         
         /*
          * same for the rythm (reel, jig etc.)
          */
-        raw_abc.append("R:").append(cleanBww[lineWithFirstQuote+1].substring(cleanBww[lineWithFirstQuote+1].indexOf('"')+1, cleanBww[lineWithFirstQuote+1].lastIndexOf('"'))).append('\n');
+        t.setRhythm(cleanBww[lineWithFirstQuote+1].substring(cleanBww[lineWithFirstQuote+1].indexOf('"')+1, cleanBww[lineWithFirstQuote+1].lastIndexOf('"')));
         
         /*
          * and the Composer
          */
-        raw_abc.append("C:").append(cleanBww[lineWithFirstQuote+2].substring(cleanBww[lineWithFirstQuote+2].indexOf('"')+1, cleanBww[lineWithFirstQuote+2].lastIndexOf('"'))).append('\n');
+        t.addComposer(cleanBww[lineWithFirstQuote+2].substring(cleanBww[lineWithFirstQuote+2].indexOf('"')+1, cleanBww[lineWithFirstQuote+2].lastIndexOf('"')));
         
         /*
          * and lastly the history.
          * BagpipePlayer takes information like "arr. by yadda yadda" as history information.
          */
-        raw_abc.append("H:").append(cleanBww[lineWithFirstQuote+3].substring(cleanBww[lineWithFirstQuote+3].indexOf('"')+1, cleanBww[lineWithFirstQuote+3].lastIndexOf('"'))).append('\n');
+        t.addHistory(cleanBww[lineWithFirstQuote+3].substring(cleanBww[lineWithFirstQuote+3].indexOf('"')+1, cleanBww[lineWithFirstQuote+3].lastIndexOf('"')));
         
         /*
          * Now parse every line with musical information starting at the line after the "" lines
@@ -148,24 +154,41 @@ public class Bww2tune {
                      * and add it.
                      */
                     if(m.group(3)!=null) {
-                        appendToBwwMusic(m.group(3));
-                        appendToBwwMusic("\n");
+                        addToBwwMusic(m.group(3));
                     }
                 }
             } else {
                 // apparently this line contains no information besides music so just append it
-                appendToBwwMusic(cleanBww[i]);
-                appendToBwwMusic("\n");
+                addToBwwMusic(cleanBww[i]);
             }
-        }
-        
-        computeAbcFromBww();
-        
+        } 
         /*
+         * 
          * Always append 'K:' at the and of the head before music. Why? Dunno!
          */
-        raw_abc.append("L:1/16\n");
-        raw_abc.append("K:A Mixolydian\n");
+        t.getMusic().addElement(voice, new KeySignature(Note.A, KeySignature.MIXOLYDIAN));
+        t.getMusic().addElement(voice, new BarLine(BarLine.REPEAT_OPEN));
+        Note bla = new Note(Note.G);
+        bla.setStrictDuration(Note.HALF);
+        t.getMusic().addElement(voice, bla);
+        t.getMusic().addElement(voice, new Note(Note.G));
+        t.getMusic().addElement(voice, new Note(Note.A));
+        t.getMusic().addElement(voice, new Note(Note.B));
+        t.getMusic().addElement(voice, new Note(Note.c));
+        t.getMusic().addElement(voice, new BarLine());
+        t.getMusic().addElement(voice, new Note(Note.d));
+        t.getMusic().addElement(voice, new Note(Note.e));
+        t.getMusic().addElement(voice, new Note(Note.f));
+        t.getMusic().addElement(voice, new Note(Note.g));
+        t.getMusic().addElement(voice, new Note(Note.a));
+        t.getMusic().addElement(voice, new BarLine(BarLine.REPEAT_CLOSE));
+        t.getMusic().addElement(voice, new EndOfStaffLine());
+        replaceAndAddBwwSymbol("LG_8");
+        replaceAndAddBwwSymbol("LAr_16");
+        replaceAndAddBwwSymbol("'la");
+        replaceAndAddBwwSymbol("Bl_32");
+        
+        // replaceAndAddBwwSymbol();
     }
     
     /**
@@ -173,23 +196,29 @@ public class Bww2tune {
      * superfluous whitespaces before, after and between the usefull symbols
      * @param s String containing one or more symbols
      */
-    private void appendToBwwMusic(String s) {
+    private void addToBwwMusic(String s) {
         if(s.matches("\n")) {
-            bwwMusic.append(s);
+            bwwMusic.add(s);
             return;
         }
         String clean="";
         clean = s.trim();
         clean = clean.replaceAll("\\s{2,}", " ");
         clean = clean.replaceAll("\\t", " ");
-        bwwMusic.append(clean).append(' ');
+        bwwMusic.add(clean+" ");
     }
+    
     
     /**
      * @return Returns the musical information gathered from the BWW file as a String
      */
-    public String getBwwMusic() {
-        return bwwMusic.toString().trim();
+    
+    public String getBwwMusicAsString() {
+        StringBuilder s = new StringBuilder();
+        for(String e : bwwMusic) {
+            s.append(e).append(" ");
+        }
+        return s.toString().trim();
     }
     
     /**
@@ -198,39 +227,107 @@ public class Bww2tune {
      */
     private void setMetronom(String m) {
         if(!metronomSet) {
-            raw_abc.append("M:").append(m).append("\n");
+            t.getMusic().addElement(voice, TimeSignature.SIGNATURE_4_4);
         }
         metronomSet=true;
     }
     
-    private void computeAbcFromBww(){
+    /**
+     * Replaces a BWW symbol with a ABC symbol
+     * @param s String containing the BWW symbol
+     * @return Returns an ABC symbol
+     */
+    private void replaceAndAddBwwSymbol(String s) {
+        Note n;
+        Pattern p = Pattern.compile("([HL]?[ABCDEFG])(r|l)?_(\\d+)"); // Matches any BWW note
+        Matcher m = p.matcher(s);
+        short noteDuration = 0;
+        // If this is a note
+        System.out.println("Current symbol: "+s);
+        if(m.find()) {
+            /*
+             * Get the duration of the note
+             */
+            System.out.println("Symbol must be a note.");
+            noteDuration = Short.parseShort(m.group(3));
+            
+            /*
+             * Note replacement
+             */
+            n = new Note(Note.c);
+            if(m.group(1).matches("LG")) n = new Note(Note.G);
+            if(m.group(1).matches("LA")) n = new Note(Note.A);
+            if(m.group(1).matches("B")) n = new Note(Note.B);
+            if(m.group(1).matches("C")) n = new Note(Note.c);
+            if(m.group(1).matches("D")) n = new Note(Note.d);
+            if(m.group(1).matches("E")) n = new Note(Note.e);
+            if(m.group(1).matches("F")) n = new Note(Note.f);
+            if(m.group(1).matches("HG")) n =  new Note(Note.g);
+            if(m.group(1).matches("HA")) n = new Note(Note.a);
+            
+            switch(noteDuration) {
+                case 32: n.setStrictDuration(Note.THIRTY_SECOND); break;
+                case 16: n.setStrictDuration(Note.SIXTEENTH); break;
+                case 8: n.setStrictDuration(Note.EIGHTH); break;
+                case 4: n.setStrictDuration(Note.QUARTER); break;
+                case 2: n.setStrictDuration(Note.HALF); break;
+                case 1: n.setStrictDuration(Note.WHOLE); break;
+            }
+            
+            t.getMusic().addElement(voice, n);
+            
+            /*
+             * See of l or r was in the note's string and add a note seperator if not
+             */
+            if(m.group(2)==null) {
+                System.out.println("Adding separator!");
+                t.getMusic().addElement(voice, new NotesSeparator());
+            }
+            
+        } else if(s.startsWith("'")) {
+            byte dots=1;
+            /*
+             * If it is a dot for the last note get the last note from the
+             * Tune, add one or two dots and append it again.
+             */
+            if(s.charAt(1)=='\'') dots++;
+            t.getMusic().getVoice(voice).getLastNote().setDotted(dots);
+        } else if(s.startsWith("^")) {
+            /*
+             * If is a group or a tie see what exactly it is.
+             * 1) It could be a triplet in the "old format" (according to the Bagpipe Player documentation)
+             *    which comes after the three notes it stands for containing
+             *    the highest note it has to go over (e.g. ^3hg means "the last 3 notes were a triplet with
+             *    an High G at its peak").
+             * 2) It could be a "new format" group which starts with ^3s and ends with ^3e. Thpse two symbols
+             *    enclose their notes which they stand for, e.g. ^3s LA_8 LA_8 LA_8 ^3e.
+             * 3) It could be a tie which is in between two tied notes. E.g. LG_2 ^tlg LG_2.
+             */
+        }
         
-    }
-    
-    private String replaceBwwSymbol(String s) {
-        //High g grace note
-        if(s.matches("|!''")) return "[|: ";
-        if(s.matches("Cr_16")) return " c";
-        if(s.matches("Bl_16")) return "B ";
-        if(s.matches("gg")) return "{a}";
-        return "";
-    }
-    
-    private void appendToAbcMusic(String s) {
-        bwwMusic.append(s);
+        
+        /*
+         * RAW CONVERSIONS
+         */
+        
+        // repeated part
+        if(s.matches("I!''")) t.getMusic().addElement(voice, new MeasureRepeat(1));
+        // end of repeated part
+        if(s.matches("''!I")) t.getMusic().addElement(voice, new RepeatEnd());
+        // bar line
+        if(s.matches("!")) t.getMusic().addElement(voice, new BarLine());
+        // end of line
+        if(s.matches("!t")) t.getMusic().addElement(voice, new EndOfStaffLine());
+        // a 1/16 c 
+        
+        System.out.println();
     }
     
     /**
      * @return Returns the parsed BWW file as Tune
      */
     public Tune getTune(){
-        return new TuneParser().parse(raw_abc.toString());
-    }
-    
-    /**
-     * @return Return the parsed BWW file as an ABC string
-     */
-    public String getAbc(){
-        return raw_abc.toString();
+        //return new TuneParser().parse(raw_abc.toString());
+        return t;
     }
 }
